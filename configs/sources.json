@@ -1,0 +1,7 @@
+[
+  {"id":"pytorch_cuda","product_family":"PyTorch","url":"https://docs.pytorch.org/docs/stable/notes/cuda.html"},
+  {"id":"postgres_parallel","product_family":"PostgreSQL","version":"16","url":"https://www.postgresql.org/docs/16/parallel-safety.html"},
+  {"id":"numpy_2","product_family":"NumPy","version":"2.0","url":"https://numpy.org/doc/2.0/release/2.0.0-notes.html"},
+  {"id":"node_workers","product_family":"Node.js","version":"22","url":"https://nodejs.org/docs/latest-v22.x/api/worker_threads.html"},
+  {"id":"spark_sql","product_family":"Apache Spark","version":"3.5.6","url":"https://spark.apache.org/docs/3.5.6/sql-performance-tuning.html"}
+]

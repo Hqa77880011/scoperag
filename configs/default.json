@@ -1,0 +1,18 @@
+{
+  "epochs": 5,
+  "lr": 0.00002,
+  "batch_size": 16,
+  "head_threshold": 0.8,
+  "verifier_threshold": 0.9,
+  "slot_threshold": 0.5,
+  "lambda": 0.15,
+  "mu": 0.3,
+  "rho": 0.05,
+  "max_facts": 6,
+  "beam_width": 16,
+  "max_bundles": 3,
+  "max_cells": 8,
+  "domain_limit": 100000,
+  "evidence_tokens": 3000,
+  "answer_tokens": 512
+}
