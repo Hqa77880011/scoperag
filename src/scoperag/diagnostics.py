@@ -128,6 +128,7 @@ def build(args):
                 answer = reference_answer(query, pool, cfg)
                 label = {
                     "id": identifier,
+                    "review_status": "unreviewed",
                     "category": kind,
                     "structured_answer": answer,
                     "applicability": answer["applicability"],
@@ -154,6 +155,7 @@ def build(args):
                                 "product_family": family,
                                 "split": split,
                                 "applicability": answer["applicability"][fact["id"]],
+                                "review_status": "unreviewed",
                                 "source_span": fact["source_span"],
                                 "url": fact["url"],
                             }
@@ -168,6 +170,7 @@ def build(args):
                                     "product_family": family,
                                     "split": split,
                                     "slot_support": int(slot in fact.get("values", {})),
+                                    "review_status": "unreviewed",
                                     "source_span": fact["source_span"],
                                     "url": fact["url"],
                                 }

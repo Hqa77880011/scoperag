@@ -8,6 +8,43 @@ import numpy as np
 FIELDS = ("version", "platform", "hardware", "backend", "settings")
 
 
+def parsed_scope(scope):
+    """Project recognized restrictions; return opaque predicates separately."""
+    known, opaque = {}, []
+    for key, value in scope.items():
+        if key == "allowed":
+            known[key] = {k: v for k, v in value.items() if k in FIELDS}
+            opaque.extend(f"{k}={v}" for k, v in value.items() if k not in FIELDS)
+        elif key == "relation":
+            known[key] = [
+                {k: v for k, v in row.items() if k in FIELDS} for row in value
+            ]
+            opaque.extend(
+                f"relation {k}={v}"
+                for row in value
+                for k, v in row.items()
+                if k not in FIELDS
+            )
+        elif key == "implications":
+            known[key] = []
+            for implication in value:
+                if (set(implication["if"]) | set(implication["then"])) <= set(FIELDS):
+                    known[key].append(implication)
+                else:
+                    opaque.append(str(implication))
+        elif key == "version_range":
+            try:
+                for bound in ["min", "max"]:
+                    if bound in value:
+                        version(value[bound])
+                known[key] = value
+            except ValueError:
+                opaque.append(str(value))
+        else:
+            opaque.append(f"{key}={value}")
+    return known, opaque
+
+
 def version(value):
     parts = re.findall(r"\d+", str(value))
     if not parts:

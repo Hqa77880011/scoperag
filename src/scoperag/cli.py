@@ -89,7 +89,13 @@ def index(args):
     from .llm import LocalModel
     from sentence_transformers import SentenceTransformer
 
-    llm = LocalModel(args.model, args.revision, max_generated=1024, max_total=16384)
+    llm = LocalModel(
+        args.model,
+        args.revision,
+        max_generated=1024,
+        max_total=16384,
+        device=args.device,
+    )
     indexed, facts = [], []
     for document in load(args.documents):
         for number, text in enumerate(chunks(document["text"])):
@@ -158,6 +164,10 @@ def index(args):
 def train(args):
     cfg, rows = load(args.config), load(args.annotations)
     seed_all(args.seed)
+    if any(r.get("review_status") == "unreviewed" for r in rows):
+        raise ValueError(
+            "Review generated annotations against their source spans before marking review_status=verified"
+        )
     family_splits = defaultdict(set)
     for row in rows:
         family_splits[row["product_family"]].add(row["split"])
@@ -254,6 +264,7 @@ def train(args):
             best = score
             torch.save(model.state_dict(), output / "heads.pt")
             tokenizer.save_pretrained(output / "tokenizer")
+            model.encoder.config.save_pretrained(output / "encoder_config")
         save(
             output / "model.json",
             {
@@ -295,10 +306,12 @@ def finite_values(facts):
         scope = fact["scope"]
         values["version"].add(fact.get("version", "0"))
         for key, items in scope.get("allowed", {}).items():
-            values[key].update(items)
+            if key in values:
+                values[key].update(items)
         for row in scope.get("relation", []):
             for key, value in row.items():
-                values[key].add(value)
+                if key in values:
+                    values[key].add(value)
         for bound in ("min", "max"):
             if bound in scope.get("version_range", {}):
                 values["version"].add(scope["version_range"][bound])
@@ -319,7 +332,12 @@ def run(args):
     encoder = SentenceTransformer(indexed["encoder"], device=args.device)
     heads = Heads(args.heads, args.device)
     llm = LocalModel(
-        args.model, args.revision, seed=args.seed, max_generated=2000, max_total=30000
+        args.model,
+        args.revision,
+        seed=args.seed,
+        max_generated=2000,
+        max_total=30000,
+        device=args.device,
     )
     verifier = (
         None if args.method == "no_verifier" else Verifier(args.verifier, args.device)
@@ -504,6 +522,10 @@ def canonical(answer):
 
 def evaluate(args):
     labels = {r["id"]: r for r in load(args.labels)}
+    if any(r.get("review_status") == "unreviewed" for r in labels.values()):
+        raise ValueError(
+            "Source-generated labels require source-binding review before evaluation"
+        )
     judgments = (
         {
             (
@@ -522,6 +544,11 @@ def evaluate(args):
 
         judge = LocalModel(args.judge_model, max_generated=32, max_total=16000)
     rows = [r for path in args.inputs for r in load(path)]
+    identities = [
+        (r["method"], r.get("top_k", 20), r["id"], r.get("seed", 17)) for r in rows
+    ]
+    if len(identities) != len(set(identities)):
+        raise ValueError("Duplicate method/top-k/question/seed observations")
     summary = []
     for method, top_k in sorted({(r["method"], r.get("top_k", 20)) for r in rows}):
         traces = [
@@ -535,9 +562,12 @@ def evaluate(args):
         categories = defaultdict(list)
         completeness = []
         stage_values = defaultdict(list)
+        pair_strata = {}
         for trace in traces:
             label, answer = labels[trace["id"]], trace["answer"]
-            if "structured_answer" in label:
+            if trace.get("error"):
+                correct = False
+            elif "structured_answer" in label:
                 correct = canonical(answer) == canonical(label["structured_answer"])
             elif judge:
                 judge.reset()
@@ -568,6 +598,9 @@ def evaluate(args):
             datasets[trace["dataset"]].append(correct)
             if label.get("pair_id"):
                 pairs[(label["pair_id"], trace.get("seed", 17))].append(correct)
+                pair_strata[label["pair_id"]] = label.get(
+                    "pair_stratum", label.get("stratum", "unspecified")
+                )
             for fact_id, gold in label.get("applicability", {}).items():
                 application.append(answer.get("applicability", {}).get(fact_id) == gold)
             if label.get("same_scope_conflict"):
@@ -587,6 +620,9 @@ def evaluate(args):
             if judgment and "claim_has_valid_citation" in judgment:
                 completeness.extend(judgment["claim_has_valid_citation"])
             if judgment:
+                for field in ["claim_supported", "citation_valid"]:
+                    if any(type(value) is not bool for value in judgment[field]):
+                        raise ValueError("Independent audit flags must be booleans")
                 for flag in judgment["claim_supported"]:
                     claims += 1
                     unsupported += not flag
@@ -599,9 +635,28 @@ def evaluate(args):
             latency.append(
                 trace.get("total_seconds", sum(r["seconds"] for r in trace["ledger"]))
             )
+        if any(len(values) != 2 for values in pairs.values()):
+            raise ValueError(
+                "Paired accuracy requires both questions exactly once for every pair/seed"
+            )
+        strata = {}
+        for stratum in set(pair_strata.values()):
+            selected = [
+                (key, values)
+                for key, values in pairs.items()
+                if pair_strata[key[0]] == stratum
+            ]
+            strata[stratum] = {
+                "both": sum(all(v) for _, v in selected),
+                "seed_pairs": len(selected),
+                "source_pairs": len({k[0] for k, _ in selected}),
+                "accuracy_percent": 100 * np.mean([all(v) for _, v in selected]),
+            }
         result = {
             "method": method,
             "top_k": top_k,
+            "pair_strata": strata,
+            "runtime_error_count": sum(bool(r.get("error")) for r in traces),
             "pair_both": sum(all(v) for v in pairs.values() if len(v) == 2),
             "pair_single": sum(sum(v) == 1 for v in pairs.values() if len(v) == 2),
             "pair_neither": sum(not any(v) for v in pairs.values() if len(v) == 2),

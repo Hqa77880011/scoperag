@@ -31,6 +31,8 @@ def judge_citations(args):
                 512,
             )
             links = response["link_supported"]
+            if type(response.get("claim_supported")) is not bool:
+                raise ValueError("Citation judge claim_supported must be a boolean")
             if len(links) != len(citations) or any(type(x) is not bool for x in links):
                 raise ValueError("Citation judge must return one boolean per citation")
             local = []

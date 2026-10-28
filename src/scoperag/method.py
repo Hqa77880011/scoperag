@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .domain import Domain
+from .domain import Domain, parsed_scope
 
 
 METHODS = (
@@ -57,7 +57,10 @@ def prepare_facts(query, facts, scores, domain, cfg, method, token_length):
     prepared = []
     for fact, score in zip(facts, scores):
         fact = dict(fact)
-        scope = dict(fact["scope"])
+        scope, opaque = parsed_scope(fact["scope"])
+        if opaque:
+            fact["parsed"] = False
+            fact["residual"] = list(fact.get("residual", [])) + opaque
         if method == "no_platform":
             scope["allowed"] = {
                 k: v for k, v in scope.get("allowed", {}).items() if k in ("version",)
@@ -92,11 +95,20 @@ def prepare_facts(query, facts, scores, domain, cfg, method, token_length):
             mask=fact_mask,
             applicability=applicability,
             slot_scores=np.asarray(score["slot_scores"]),
-            tokens=token_length(fact["assertion"] + " " + fact.get("qualifier", "")),
+            tokens=token_length(json.dumps({fact["id"]: evidence_payload(fact)})),
             support=float(max(score["slot_scores"], default=0)),
         )
         prepared.append(fact)
     return query_mask, prepared
+
+
+def evidence_payload(fact):
+    """Serialize the same source-preserving fields used in the generator prompt."""
+    return {
+        k: v
+        for k, v in fact.items()
+        if k in ("assertion", "qualifier", "source_span", "url", "values", "residual")
+    }
 
 
 def search(query_mask, facts, cfg, joint=True, branch_mask=None):
@@ -143,6 +155,7 @@ def search(query_mask, facts, cfg, joint=True, branch_mask=None):
 
 def output_bundles(query, query_mask, facts, bundles, domain, cfg, method):
     chosen, covered = [], np.zeros_like(query_mask)
+    used_facts, used_tokens = set(), 0
     for bundle in bundles:
         if not bundle.indices or np.any(bundle.coverage < cfg["slot_threshold"]):
             continue
@@ -183,6 +196,10 @@ def output_bundles(query, query_mask, facts, bundles, domain, cfg, method):
         available = actual & ~covered
         if not available.any():
             continue
+        added = set(bundle.indices) - used_facts
+        extra_tokens = sum(facts[i]["tokens"] for i in added)
+        if used_tokens + extra_tokens > cfg["evidence_tokens"]:
+            continue
         if (
             len(domain.explicit(available)) + sum(len(r["conditions"]) for r in chosen)
             > cfg["max_cells"]
@@ -199,6 +216,8 @@ def output_bundles(query, query_mask, facts, bundles, domain, cfg, method):
             }
         )
         covered |= available
+        used_facts.update(added)
+        used_tokens += extra_tokens
         if len(chosen) >= cfg["max_bundles"]:
             break
     if not chosen:
@@ -218,6 +237,19 @@ def output_bundles(query, query_mask, facts, bundles, domain, cfg, method):
 def infer(query, candidates, scores, cfg, method, token_length):
     selection_started = time.perf_counter()
     domain = Domain(query["domain"], cfg["domain_limit"])
+    scope, opaque = parsed_scope(query["scope"])
+    if opaque:
+        return (
+            {
+                "status": "clarification",
+                "branches": [],
+                "unanswered": [],
+                "reason": "Unrecognized query restrictions: " + "; ".join(opaque),
+            },
+            [],
+            domain,
+        )
+    query = dict(query, scope=scope)
     if not domain.mask(query["scope"]).any():
         return (
             {
@@ -234,6 +266,13 @@ def infer(query, candidates, scores, cfg, method, token_length):
     )
     if method in ("no_joint", "individual"):
         bundles = search(query_mask, facts, cfg, joint=False)
+        # Commit the output quota before downstream joint rejection. Rejection
+        # cannot select a lower-ranked replacement from the remaining beam.
+        bundles = [
+            b
+            for b in bundles
+            if b.indices and np.all(b.coverage >= cfg["slot_threshold"])
+        ][: cfg["max_bundles"]]
     elif method == "exact_atomic":
         bundles = []
         for index in np.flatnonzero(query_mask):
@@ -364,15 +403,18 @@ def generate(answer, facts, llm, query, cfg):
         return answer
     indexed = {f["id"]: f for f in facts}
     evidence = {
-        identifier: {
-            k: v
-            for k, v in indexed[identifier].items()
-            if k
-            in ("assertion", "qualifier", "source_span", "url", "values", "residual")
-        }
+        identifier: evidence_payload(indexed[identifier])
         for b in answer["branches"]
         for identifier in b["fact_ids"]
     }
+    if llm.tokens(json.dumps(evidence)) > cfg["evidence_tokens"]:
+        answer.update(
+            status="clarification",
+            branches=[],
+            claims=[],
+            text="The source quotations exceed the shared evidence token budget.",
+        )
+        return answer
     response = llm.json(
         "Answer the technical question using atomic statements and retain every branch condition. Return {claims:[{text,branch_id,fact_ids:[...],values:{slot:value}}],text}. Only use supplied source facts. Unanswered conditions must remain explicit.\nQUESTION="
         + query["question"]

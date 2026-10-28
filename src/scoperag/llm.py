@@ -7,12 +7,21 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 class LocalModel:
     def __init__(
-        self, name, revision="main", seed=17, max_generated=4096, max_total=65536
+        self,
+        name,
+        revision="main",
+        seed=17,
+        max_generated=4096,
+        max_total=65536,
+        device=None,
     ):
         torch.manual_seed(seed)
         self.tokenizer = AutoTokenizer.from_pretrained(name, revision=revision)
         self.model = AutoModelForCausalLM.from_pretrained(
-            name, revision=revision, torch_dtype="auto", device_map="auto"
+            name,
+            revision=revision,
+            torch_dtype="auto",
+            device_map="auto" if device is None else {"": device},
         )
         self.model.eval()
         self.max_generated = max_generated
@@ -67,6 +76,7 @@ class LocalModel:
         with torch.inference_mode():
             out = self.model.generate(
                 ids,
+                attention_mask=torch.ones_like(ids),
                 max_new_tokens=allowance,
                 do_sample=temperature > 0,
                 temperature=temperature if temperature > 0 else None,
