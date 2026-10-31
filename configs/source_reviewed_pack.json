@@ -1,0 +1,461 @@
+{
+  "schema": "scoperag-source-reviewed-micro-v1",
+  "purpose": "new_source_binding_functional_check",
+  "reviewer": "OpenAI Codex; source review, not human annotation",
+  "review_date": "2026-11-01",
+  "historical_benchmark": false,
+  "scope_note": "Five newly reviewed facts. The missing/outside cases concern this finite reviewed fact pool, and do not assert the opposite technical fact or absence of knowledge in the entire documentation.",
+  "families": [
+    {
+      "source_id": "pytorch_cuda",
+      "product_family": "PyTorch",
+      "split": "train",
+      "capture_url": "https://docs.pytorch.org/docs/2.15/notes/cuda.html",
+      "section": "Asynchronous execution",
+      "excerpt": "By default, GPU operations are asynchronous.",
+      "source_span": "By default, GPU operations are asynchronous.",
+      "assertion": "Ordinary CUDA GPU work is queued asynchronously under the documented default.",
+      "qualifier": "PyTorch 2.15 CUDA semantics; GPU operations; default execution settings. Nondefault launch settings are outside this selected fact.",
+      "values": {
+        "execution": "asynchronous"
+      },
+      "domain": {
+        "version": [
+          "2.15"
+        ],
+        "platform": [
+          "unspecified"
+        ],
+        "hardware": [
+          "GPU"
+        ],
+        "backend": [
+          "CUDA"
+        ],
+        "settings": [
+          "default",
+          "CUDA_LAUNCH_BLOCKING=1"
+        ]
+      },
+      "axis": "settings",
+      "supported": "default",
+      "outside": "CUDA_LAUNCH_BLOCKING=1",
+      "review_status": "reviewed",
+      "review_rationale": "The source explicitly says default. It does not make an unconditional claim about forced-synchronous settings; the stable URL currently resolves to version 2.15, which is pinned here.",
+      "cases": [
+        {
+          "kind": "specified",
+          "review_status": "reviewed",
+          "question": "In the reviewed PyTorch 2.15 CUDA source, how do GPU operations execute under default settings?",
+          "gold_status": "direct",
+          "gold_applicability": "entailed",
+          "gold_cells": [
+            0
+          ],
+          "gold_unanswered": []
+        },
+        {
+          "kind": "missing",
+          "review_status": "reviewed",
+          "question": "From this reviewed fact, what execution behavior is justified if the CUDA launch setting is unspecified?",
+          "gold_status": "conditional",
+          "gold_applicability": "unknown",
+          "gold_cells": [
+            0
+          ],
+          "gold_unanswered": [
+            1
+          ]
+        },
+        {
+          "kind": "outside",
+          "review_status": "reviewed",
+          "question": "What GPU execution behavior is established for CUDA_LAUNCH_BLOCKING=1 using only this selected default-settings fact?",
+          "gold_status": "clarification",
+          "gold_applicability": "inconsistent",
+          "gold_cells": [],
+          "gold_unanswered": [
+            1
+          ]
+        }
+      ],
+      "capture": {
+        "source_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+        "capture_url": "https://docs.pytorch.org/docs/2.15/notes/cuda.html",
+        "effective_url": "https://docs.pytorch.org/docs/2.15/notes/cuda.html",
+        "http_status": 200,
+        "captured_at_utc": "2026-10-31T18:01:22.940201+00:00",
+        "normalization": "HTML text with script/style removed; whitespace collapsed",
+        "normalized_text_length": 87717,
+        "excerpt_char_span": [
+          22110,
+          22154
+        ],
+        "fact_char_span": [
+          22110,
+          22154
+        ]
+      }
+    },
+    {
+      "source_id": "postgres_parallel",
+      "product_family": "PostgreSQL",
+      "split": "train",
+      "section": "15.4.1 Parallel Labeling for Functions and Aggregates",
+      "excerpt": "all user-defined functions are assumed to be parallel unsafe unless otherwise marked.",
+      "source_span": "parallel unsafe unless otherwise marked.",
+      "assertion": "A user-defined function without an explicit parallel-safety marking defaults to UNSAFE.",
+      "qualifier": "PostgreSQL 16; user-defined functions; no explicit PARALLEL marking. A function explicitly marked by its author is outside this fact.",
+      "values": {
+        "parallel_label": "UNSAFE"
+      },
+      "domain": {
+        "version": [
+          "16",
+          "17"
+        ],
+        "platform": [
+          "unspecified"
+        ],
+        "hardware": [
+          "unspecified"
+        ],
+        "backend": [
+          "PostgreSQL"
+        ],
+        "settings": [
+          "unmarked_user_function"
+        ]
+      },
+      "axis": "version",
+      "supported": "16",
+      "outside": "17",
+      "review_status": "reviewed",
+      "review_rationale": "The unless-otherwise-marked exception and PostgreSQL 16 source version are preserved. The version-17 case asks only about the selected version-16 fact pool; it is not labeled SAFE or given an invented version-17 answer.",
+      "cases": [
+        {
+          "kind": "specified",
+          "review_status": "reviewed",
+          "question": "What is the default parallel-safety classification for an unmarked PostgreSQL 16 user-defined function?",
+          "gold_status": "direct",
+          "gold_applicability": "entailed",
+          "gold_cells": [
+            0
+          ],
+          "gold_unanswered": []
+        },
+        {
+          "kind": "missing",
+          "review_status": "reviewed",
+          "question": "From this reviewed PostgreSQL 16 fact, what default label is supported for an unmarked user-defined function when the release is unspecified between 16 and 17?",
+          "gold_status": "conditional",
+          "gold_applicability": "unknown",
+          "gold_cells": [
+            0
+          ],
+          "gold_unanswered": [
+            1
+          ]
+        },
+        {
+          "kind": "outside",
+          "review_status": "reviewed",
+          "question": "What default parallel label is established for an unmarked PostgreSQL 17 user-defined function using only this selected PostgreSQL 16 fact?",
+          "gold_status": "clarification",
+          "gold_applicability": "inconsistent",
+          "gold_cells": [],
+          "gold_unanswered": [
+            1
+          ]
+        }
+      ],
+      "capture": {
+        "source_url": "https://www.postgresql.org/docs/16/parallel-safety.html",
+        "capture_url": "https://www.postgresql.org/docs/16/parallel-safety.html",
+        "effective_url": "https://www.postgresql.org/docs/16/parallel-safety.html",
+        "http_status": 200,
+        "captured_at_utc": "2026-10-31T18:01:25.021647+00:00",
+        "normalization": "HTML text with script/style removed; whitespace collapsed",
+        "normalized_text_length": 5043,
+        "excerpt_char_span": [
+          2097,
+          2182
+        ],
+        "fact_char_span": [
+          2142,
+          2182
+        ]
+      }
+    },
+    {
+      "source_id": "numpy_2",
+      "product_family": "NumPy",
+      "split": "development",
+      "section": "2.0.0 release highlights: Improved behavior",
+      "excerpt": "The default integer type on Windows is now int64 rather than int32",
+      "source_span": "on Windows is now int64 rather than int32",
+      "assertion": "NumPy 2.0 changes the default integer dtype on Windows to int64.",
+      "qualifier": "NumPy 2.0.0 release statement about Windows. No general integer-type rule for a 32-bit Linux platform is added to this selected fact.",
+      "values": {
+        "default_integer_dtype": "int64"
+      },
+      "domain": {
+        "version": [
+          "2.0.0"
+        ],
+        "platform": [
+          "Windows",
+          "Linux_32_bit"
+        ],
+        "hardware": [
+          "unspecified"
+        ],
+        "backend": [
+          "NumPy"
+        ],
+        "settings": [
+          "default_integer"
+        ]
+      },
+      "axis": "platform",
+      "supported": "Windows",
+      "outside": "Linux_32_bit",
+      "review_status": "reviewed",
+      "review_rationale": "The release and Windows qualifiers are retained. The outside cell tests only this selected Windows fact's applicability to 32-bit Linux; no opposite dtype or complete-document answer is assigned.",
+      "cases": [
+        {
+          "kind": "specified",
+          "review_status": "reviewed",
+          "question": "According to the reviewed NumPy 2.0.0 Windows release statement, what is the new default integer dtype?",
+          "gold_status": "direct",
+          "gold_applicability": "entailed",
+          "gold_cells": [
+            0
+          ],
+          "gold_unanswered": []
+        },
+        {
+          "kind": "missing",
+          "review_status": "reviewed",
+          "question": "What integer-dtype answer is supported by this Windows-specific reviewed fact when the platform is unspecified?",
+          "gold_status": "conditional",
+          "gold_applicability": "unknown",
+          "gold_cells": [
+            0
+          ],
+          "gold_unanswered": [
+            1
+          ]
+        },
+        {
+          "kind": "outside",
+          "review_status": "reviewed",
+          "question": "What default integer dtype is established on 32-bit Linux using only this selected Windows-specific fact?",
+          "gold_status": "clarification",
+          "gold_applicability": "inconsistent",
+          "gold_cells": [],
+          "gold_unanswered": [
+            1
+          ]
+        }
+      ],
+      "capture": {
+        "source_url": "https://numpy.org/doc/2.0/release/2.0.0-notes.html",
+        "capture_url": "https://numpy.org/doc/2.0/release/2.0.0-notes.html",
+        "effective_url": "https://numpy.org/doc/2.0/release/2.0.0-notes.html",
+        "http_status": 200,
+        "captured_at_utc": "2026-10-31T18:01:27.585672+00:00",
+        "normalization": "HTML text with script/style removed; whitespace collapsed",
+        "normalized_text_length": 55721,
+        "excerpt_char_span": [
+          4676,
+          4742
+        ],
+        "fact_char_span": [
+          4701,
+          4742
+        ]
+      }
+    },
+    {
+      "source_id": "node_workers",
+      "product_family": "Node.js",
+      "split": "test",
+      "section": "Worker threads: introductory workload guidance",
+      "excerpt": "Workers (threads) are useful for performing CPU-intensive JavaScript operations.",
+      "source_span": "CPU-intensive JavaScript operations.",
+      "assertion": "Node worker threads are a useful option for CPU-heavy JavaScript workloads.",
+      "qualifier": "Node.js v22.23.4 documentation, within the registered v22 family; CPU-intensive JavaScript. This fact does not say workers cannot perform I/O or promise a speedup.",
+      "values": {
+        "worker_guidance": "useful_for_cpu_heavy_javascript"
+      },
+      "domain": {
+        "version": [
+          "22.23.4"
+        ],
+        "platform": [
+          "unspecified"
+        ],
+        "hardware": [
+          "CPU"
+        ],
+        "backend": [
+          "worker_threads"
+        ],
+        "settings": [
+          "CPU-intensive_JavaScript",
+          "IO_intensive"
+        ]
+      },
+      "axis": "settings",
+      "supported": "CPU-intensive_JavaScript",
+      "outside": "IO_intensive",
+      "review_status": "reviewed",
+      "review_rationale": "The CPU-intensive workload limitation is explicit. The neighboring I/O guidance was read, but is not turned into an absolute I/O prohibition or a measured speed claim.",
+      "cases": [
+        {
+          "kind": "specified",
+          "review_status": "reviewed",
+          "question": "What qualitative guidance does the reviewed Node.js v22 worker documentation give for CPU-intensive JavaScript?",
+          "gold_status": "direct",
+          "gold_applicability": "entailed",
+          "gold_cells": [
+            0
+          ],
+          "gold_unanswered": []
+        },
+        {
+          "kind": "missing",
+          "review_status": "reviewed",
+          "question": "What worker guidance is supported by this CPU-specific reviewed fact when the workload is unspecified?",
+          "gold_status": "conditional",
+          "gold_applicability": "unknown",
+          "gold_cells": [
+            0
+          ],
+          "gold_unanswered": [
+            1
+          ]
+        },
+        {
+          "kind": "outside",
+          "review_status": "reviewed",
+          "question": "What worker guidance is established for an I/O-intensive workload using only this selected CPU-intensive-JavaScript fact?",
+          "gold_status": "clarification",
+          "gold_applicability": "inconsistent",
+          "gold_cells": [],
+          "gold_unanswered": [
+            1
+          ]
+        }
+      ],
+      "capture": {
+        "source_url": "https://nodejs.org/docs/latest-v22.x/api/worker_threads.html",
+        "capture_url": "https://nodejs.org/docs/latest-v22.x/api/worker_threads.html",
+        "effective_url": "https://nodejs.org/docs/latest-v22.x/api/worker_threads.html",
+        "http_status": 200,
+        "captured_at_utc": "2026-10-31T18:01:33.967193+00:00",
+        "normalization": "HTML text with script/style removed; whitespace collapsed",
+        "normalized_text_length": 57232,
+        "excerpt_char_span": [
+          5698,
+          5778
+        ],
+        "fact_char_span": [
+          5742,
+          5778
+        ]
+      }
+    },
+    {
+      "source_id": "spark_sql",
+      "product_family": "Apache Spark",
+      "split": "test",
+      "section": "Join Strategy Hints for SQL Queries",
+      "excerpt": "there is no guarantee that Spark will choose the join strategy specified in the hint",
+      "source_span": "no guarantee",
+      "assertion": "A Spark SQL join-strategy hint does not guarantee that the planner uses that strategy.",
+      "qualifier": "Apache Spark 3.5.6 SQL, join-strategy hint supplied. The source explains that strategy support depends on join type; no particular chosen strategy is asserted.",
+      "values": {
+        "hint_strategy_guaranteed": false
+      },
+      "domain": {
+        "version": [
+          "3.5.6"
+        ],
+        "platform": [
+          "unspecified"
+        ],
+        "hardware": [
+          "unspecified"
+        ],
+        "backend": [
+          "Spark_SQL"
+        ],
+        "settings": [
+          "join_strategy_hint_supplied",
+          "no_join_hint"
+        ]
+      },
+      "axis": "settings",
+      "supported": "join_strategy_hint_supplied",
+      "outside": "no_join_hint",
+      "review_status": "reviewed",
+      "review_rationale": "No-guarantee is not a claim that hints are ignored. The hint-presence qualifier is retained and no optimizer outcome is fabricated.",
+      "cases": [
+        {
+          "kind": "specified",
+          "review_status": "reviewed",
+          "question": "In Spark SQL 3.5.6, is a supplied join-strategy hint guaranteed to determine the selected strategy?",
+          "gold_status": "direct",
+          "gold_applicability": "entailed",
+          "gold_cells": [
+            0
+          ],
+          "gold_unanswered": []
+        },
+        {
+          "kind": "missing",
+          "review_status": "reviewed",
+          "question": "What conclusion is justified by this reviewed hint rule if hint presence is unspecified?",
+          "gold_status": "conditional",
+          "gold_applicability": "unknown",
+          "gold_cells": [
+            0
+          ],
+          "gold_unanswered": [
+            1
+          ]
+        },
+        {
+          "kind": "outside",
+          "review_status": "reviewed",
+          "question": "What planner guarantee is established for a query with no join hint using only this selected supplied-hint rule?",
+          "gold_status": "clarification",
+          "gold_applicability": "inconsistent",
+          "gold_cells": [],
+          "gold_unanswered": [
+            1
+          ]
+        }
+      ],
+      "capture": {
+        "source_url": "https://spark.apache.org/docs/3.5.6/sql-performance-tuning.html",
+        "capture_url": "https://spark.apache.org/docs/3.5.6/sql-performance-tuning.html",
+        "effective_url": "https://spark.apache.org/docs/3.5.6/sql-performance-tuning.html",
+        "http_status": 200,
+        "captured_at_utc": "2026-10-31T18:01:38.133301+00:00",
+        "normalization": "HTML text with script/style removed; whitespace collapsed",
+        "normalized_text_length": 15728,
+        "excerpt_char_span": [
+          6379,
+          6463
+        ],
+        "fact_char_span": [
+          6388,
+          6400
+        ]
+      }
+    }
+  ]
+}

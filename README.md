@@ -29,6 +29,29 @@ scoperag build-diagnostics --index data/technical_index --output data/scopediag
 scoperag index --documents data/versionqa/documents.json --output data/index
 ```
 
+### Small source-reviewed pack
+
+`configs/source_reviewed_pack.json` is a new, explicitly **Codex source-reviewed** micro-pack. It is not human annotation or the paper's historical ScopeDiag data. On 2026-11-01, all five registered official pages were fetched successfully and their selected excerpts were checked against the original text. Capture records retain the registry URL, effective URL, UTC time, normalized-page character offsets and the selected source span. PyTorch's moving stable link resolved to 2.15, so this pack pins that documentation; Node's v22 capture was checked as v22.23.4.
+
+| Official source | Reviewed fact and retained restriction | Split |
+| --- | --- | --- |
+| [PyTorch CUDA](https://docs.pytorch.org/docs/2.15/notes/cuda.html#asynchronous-execution) | GPU work is asynchronous under the documented default execution settings. | train |
+| [PostgreSQL 16](https://www.postgresql.org/docs/16/parallel-safety.html) | An unmarked user-defined function defaults to parallel UNSAFE; explicit marking is an exception. | train |
+| [NumPy 2.0.0](https://numpy.org/doc/2.0/release/2.0.0-notes.html) | The Windows default integer dtype changed to int64. | development |
+| [Node.js v22 workers](https://nodejs.org/docs/latest-v22.x/api/worker_threads.html) | Worker threads can help CPU-intensive JavaScript; this fact does not assert an I/O prohibition or measured speedup. | test |
+| [Spark SQL 3.5.6](https://spark.apache.org/docs/3.5.6/sql-performance-tuning.html#join-strategy-hints-for-sql-queries) | A supplied join-strategy hint does not guarantee the chosen strategy. | test |
+
+Each fact has three explicitly reviewed cases: the stated condition, a missing condition, and a configuration outside that fact's declared scope. Gold status, applicability and finite-domain cell indices are declarations in the checked-in pack, not outputs of `reference_answer`, a generator or the solver under test. Outside cases concern this selected reviewed fact pool: they do not assert the opposite technical answer, or that the complete official page lacks other relevant information. No generated/unreviewed annotation is automatically marked reviewed.
+
+```bash
+python -m scoperag.reviewed_pack --output outputs/source-reviewed
+python -m scoperag.reviewed_pack --capture-live --output outputs/source-reviewed-live
+```
+
+The first command uses the checked-in reviewed excerpts and capture provenance; the second re-fetches all five official pages and checks the excerpt/character bindings against actual captured text. A changed Node release or missing excerpt fails for review. Both commands write standard `documents.json`, `facts.json`, `tasks.json`, `labels.json`, train/development-only `annotations.json`, search traces and `verification.json`. Live captures remain under ignored `outputs/`. The original generated-data review gate remains in `train` and `evaluate`; this module also rejects an unreviewed fact or case before writing outputs.
+
+Actual CPU checks passed for five source spans, five facts, 15 manually declared cases and 30 ScopeRAG/exact_atomic comparisons, covering all three Domain applicability states, conditional branches and unanswered cells. The product-family split is unchanged. These checks supply reviewed slot support to isolate source binding and finite-domain selection; they do not measure learned-head accuracy, retrieval, generation or independent citation judging. There are no model downloads. CI repeats this small offline check with NumPy only.
+
 `prepare --source conflictbank --count 1000 --output data/conflictbank` and `prepare --source confact --output data/confact` import the other supported sources. Index each prepared `documents.json` separately. Custom packs use `--source manifest --input pack.json` with separate tasks, documents and labels.
 
 ## Training and inference
@@ -92,4 +115,4 @@ python tests/smoke.py
 
 Actually checked on Windows, Python 3.13.5, torch 2.7.1+cu118 (CPU execution), NumPy 2.1.3, SciPy 1.15.3, scikit-learn 1.6.1, transformers 4.57.6 and tokenizers 0.22.1. It creates random tiny BERT/GPT-2 fixtures locally, fits the applicability/support heads for two optimizer steps, checks finite gradients and parameter changes, reloads without the original encoder path, and runs actual causal forward/generation and token limits. Hand-constructed coupled domains check a higher-order joint incompatibility, exact-reference agreement, the independent control, unknown restrictions and evidence limits. Hand-counted paired evaluation checks that an error cannot earn clarification credit. Fixtures and weights stay under ignored `outputs/smoke/`.
 
-These are synthetic functional checks. The full 7B retrieval/indexing/generation/verifier pipeline, real source-binding annotations, benchmark scores, and the 512/4,096/65,536-state scaling sweep have not been rerun. Source collection still depends on the upstream sites and access conditions. No performance table is populated from the functional fixtures.
+The neural smoke fixtures are synthetic functional checks. The separate reviewed micro-pack above adds real source-binding examples. The original full annotation/benchmark pack, full 7B retrieval/indexing/generation/verifier pipeline, benchmark scores, and 512/4,096/65,536-state scaling sweep have not been recovered or rerun. Source collection still depends on the upstream sites and access conditions. No paper performance table is populated from these checks.
