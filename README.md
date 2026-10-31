@@ -80,6 +80,8 @@ Data preparation writes `tasks.json`, `documents.json` and separate `labels.json
 
 ## Verification
 
+Rechecked on 2026-11-01 using the existing `python tests/smoke.py` with one CPU thread. Optional TensorFlow/Flax backends were disabled (`USE_TF=0`, `USE_FLAX=0`); local test-only dependencies were isolated from the shared Python environment.
+
 The existing implementation was retained and repaired for scope parsing, joint controls, evidence accounting, checkpoint portability and evaluation. Neither its presence nor the new checks establishes provenance for the paper's recorded results.
 
 Run the offline functional check from the repository root:
